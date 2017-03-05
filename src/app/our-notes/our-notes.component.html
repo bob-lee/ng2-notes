@@ -1,0 +1,8 @@
+<form [formGroup]="myForm" (submit)="searchOrExit()">
+  <md-input-container>
+    <input mdInput placeholder="Group name" formControlName="groupName">
+  </md-input-container>
+  <button md-button><i class="material-icons">{{inside ? 'expand_less' : 'search'}}</i></button>
+</form>
+
+<group (inside)="updateState($event)"></group>

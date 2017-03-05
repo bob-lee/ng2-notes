@@ -1,0 +1,8 @@
+<button md-button (click)="add()">Add note</button>
+<note [note]="noteToAdd" (event)="handle($event)"></note>
+
+<pre>{{notes ? notes.length : 0}}</pre>
+
+<div *ngFor="let note of notes" (click)="edit(note)" class="notes">
+  <note [note]="note" (event)="handle($event)"></note>
+</div>

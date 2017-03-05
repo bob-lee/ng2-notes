@@ -1,0 +1,50 @@
+<div *ngIf="note && note.todo === 0">
+  {{note.text}}, {{note.name}}, {{note.updatedAt | date : 'dd/MM/yyyy h.mma' | lowercase}}
+</div>
+
+<div *ngIf="note && note.todo > 0">
+
+  <pre>{{noteForm.value | json}}</pre>
+
+  <form [formGroup]="noteForm">
+    <div class="pull-right">
+      <button md-button (click)="remove($event)">Remove</button>
+      <button md-button (click)="cancel($event)" type="button">Cancel</button>
+      <button md-button (click)="save($event)">Save</button>
+    </div>
+
+    <md-input-container>
+      <textarea mdInput placeholder="Note" formControlName="text" rows="4" required></textarea>
+    </md-input-container>
+
+    <md-input-container>
+      <input mdInput placeholder="Name" formControlName="name" required>
+    </md-input-container>
+  </form>
+
+  <!--<div class="row">
+    <div class="pull-right">
+      <button class="btn btn-link" (click)="remove()" [hidden]="note.todo !== 1">Remove</button>
+      <button class="btn btn-link" (click)="cancel()" type="button">Cancel</button>
+      <button class="btn btn-link" (click)="save()">Save</button>
+    </div>
+  </div>
+
+  <div class="form-horizontal">
+    <div class="form-group">
+      <label class="control-label col-md-3" for="content">Note</label>
+      <div class="col-md-9">
+        <textarea class="form-control" rows="4" id="content" name="content" required></textarea>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label col-md-3" for="name">Name</label>
+      <div class="col-md-9">
+        <input class="form-control text-box single-line" id="name" name="name" type="text" required/>
+      </div>
+    </div>
+  </div>-->
+
+
+</div>
