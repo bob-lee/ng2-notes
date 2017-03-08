@@ -2,7 +2,8 @@
 <note [note]="noteToAdd" (event)="handle($event)"></note>
 
 <pre>{{notes ? notes.length : 0}}</pre>
+<!--<pre>{{notes[0].text}}-->
 
-<div *ngFor="let note of notes" (click)="edit(note)" class="notes">
+<div *ngFor="let note of notes; let i = index" (click)="edit(note, i)" class="notes">
   <note [note]="note" (event)="handle($event)"></note>
 </div>

@@ -21,6 +21,10 @@ export class NoteService {
       return this.http
         .post(`api/notes`, note)
         .map((r: Response) => r.json());
+    } else if (note.todo === 3) { // remove
+      return this.http
+        .delete(`api/notes/${note._id}`)
+        .map((r: Response) => r.json());
     }
   }
 }

@@ -59,27 +59,35 @@ export class GroupComponent implements OnInit {
     };
   }
 
-  edit(note) {
+  edit(note, index) {
     note.todo = 1;
-    console.log('edit', note._id);
+    note.index = index; // provide note component with index
+    console.log('edit', note._id, index);
   }
 
-  handle(e) {
+  handle(e) { // handle events (remove, cancel, or save) from note component by seeing e.todo 
     console.log('handle', e);
     if (e.todo === 1) { // edit
       this.noteService.save(e)
         .subscribe(result => {
           console.log('edited', result);
-          e.todo = 0;
+          e.todo = 0; // back to view mode
         });
     } else if (e.todo === 2) { // add
       this.noteService.save(e)
         .subscribe(result => {
-          console.log('added', result);
-          result.todo = 0;
+          result.note.todo = 0;
           this.notes.push(result.note);
-          this.ref.markForCheck();
+          console.log('added', result);
           this.empty();
+        });
+    } else if (e.todo === 3) { // remove
+      console.log('handle', e);
+      this.noteService.save(e)
+        .subscribe(result => {
+          console.log('removed', result);
+          e.todo = 0;
+          this.notes.splice(e.index, 1); // slice vs splice, splice doesn't create a new array instance, ngFor change detection in question..
         });
     }
   }
