@@ -1,0 +1,16 @@
+{{note | json}}
+<form [formGroup]="noteForm">
+  <div class="pull-right">
+    <button md-button (click)="remove($event)" [hidden]="note.todo === 2">Remove</button>
+    <button md-button (click)="cancel($event)" type="button">Cancel</button>
+    <button md-button (click)="save($event)">Save</button>
+  </div>
+
+  <md-input-container>
+    <textarea mdInput placeholder="Note" formControlName="text" rows="4" required></textarea>
+  </md-input-container>
+
+  <md-input-container>
+    <input mdInput placeholder="Name" formControlName="name" required>
+  </md-input-container>
+</form>

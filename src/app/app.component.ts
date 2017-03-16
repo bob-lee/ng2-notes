@@ -1,13 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
-export interface Note {
-  group: string;
-  name: string;
-  text: string;
-  todo: number;
-}
-
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',

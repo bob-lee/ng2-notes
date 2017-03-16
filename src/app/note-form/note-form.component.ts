@@ -1,0 +1,94 @@
+import { Component, OnInit, Input, Output } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+
+import { Note, NoteService } from '../service/note.service';
+
+@Component({
+  selector: 'note-form',
+  templateUrl: './note-form.component.html',
+  styleUrls: ['./note-form.component.css']
+})
+export class NoteFormComponent implements OnInit {
+  @Input() noteToEdit: any;
+  note: Note;
+  noteForm: FormGroup;
+  /* 
+  note that it does not subscribe to value changes of this form.
+  on button click, form value is checked and then manually taken to model.
+  */
+
+  constructor(private formBuilder: FormBuilder,
+    private router: Router,
+    private noteService: NoteService) { }
+
+  ngOnInit() {
+    this.noteForm = this.formBuilder.group({
+      name: ['', Validators.required],
+      text: ['', Validators.required]
+    });
+
+    if (this.noteToEdit) { // edit
+      this.note = this.noteToEdit;
+    } else { // add
+      this.note = {
+        group: this.noteService.groupName,
+        name: '',
+        text: '',
+        todo: 2
+      };
+    }
+
+    this.noteForm.patchValue(this.note);
+  }
+
+  save(e) { // add or edit
+    e.stopPropagation();
+    console.log('save', this.noteForm.status);
+    if (this.noteForm.invalid) return;
+
+    if (this.changed()) {
+      // take form value to model
+      this.note.name = this.noteForm.value.name;
+      this.note.text = this.noteForm.value.text;
+
+      this.saveNote();
+    } else { // no change, go back without making server call
+      this.goBack();
+    }
+  }
+
+  cancel(e) {
+    e.stopPropagation();
+    this.noteForm.patchValue(this.note); // restore original
+    this.note.todo = undefined;
+    console.log('cancel');
+    this.goBack();
+  }
+
+  remove(e) {
+    e.stopPropagation();
+    this.note.todo = 3;
+    this.saveNote();
+  }
+
+  private changed() { // compare form value and this.note
+    if (this.note.todo === 2) return true; // add, changed of course
+    const orig = this.note;
+    const form = this.noteForm.value;
+    const changed = form.name !== orig.name || form.text !== orig.text;
+    return changed;
+  }
+
+  private goBack() {
+    this.router.navigate(['group', this.noteService.groupName]);
+  }
+
+  private saveNote() { // assumes this.note has form value
+    this.noteService.save(this.note)
+      .subscribe(result => {
+        console.log('saved', result);
+        this.goBack();
+      });
+  }
+}

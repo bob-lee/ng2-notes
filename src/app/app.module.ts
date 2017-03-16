@@ -8,8 +8,8 @@ import 'hammerjs';
 
 import { AppComponent } from './app.component';
 import { OurNotesComponent } from './our-notes/our-notes.component';
-import { GroupComponent } from './group/group.component';
 import { NoteComponent } from './note/note.component';
+import { NoteFormComponent } from './note-form/note-form.component';
 
 import { NoteService } from './service/note.service';
 import { AppRoutes } from './app.routes';
@@ -18,8 +18,8 @@ import { AppRoutes } from './app.routes';
   declarations: [
     AppComponent,
     OurNotesComponent,
-    GroupComponent,
-    NoteComponent
+    NoteComponent,
+    NoteFormComponent
   ],
   imports: [
     BrowserModule,
