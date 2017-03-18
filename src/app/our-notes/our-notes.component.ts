@@ -6,13 +6,14 @@ import { NoteService } from '../service/note.service';
 
 /*
 0! handle 'add' by child route of OurNotesComponent as a nested view 
-0. handle 'edit' by child route of OurNotesComponent as a nested view 
+0! handle 'edit' by child route of OurNotesComponent as a nested view 
 0! relocate GroupComponent stuff into OurNotesComponent and remove it
-0. allow only one note-form at once
+0! allow only one note-form at once
 1! mandatory fields - name and text
-3. show validation error (required)
+3! show validation error (required)
 2! show group name inside the group
 0! when saving with no change, do the same navigation without making server call
+0! when entering edit mode, do not make server call if group name hasn't changed
 4! after successful add, content remains in the add form
 */
 
@@ -39,25 +40,22 @@ export class OurNotesComponent implements OnInit {
 
     const gName = this.route.snapshot.params['name'];
     const indexToEdit = this.route.snapshot.params['index'];
-    console.log('ngOnInit', gName, indexToEdit);
+    console.log('ngOnInit', gName, indexToEdit, this.route.snapshot);
     if (gName) {
       this.myForm.controls['groupName'].setValue(gName);
 
-      this.noteService.search(gName)
-        .subscribe(notes => {
-          this.notes = notes;
-          this.inside = true;
-          console.log(this.notes);
-
-          if (indexToEdit) { // edit
-            this.notes[indexToEdit].todo = 1;
-            this.notes[indexToEdit].index = indexToEdit; // provide note component with index
-          }
-        },
-        error => console.error('searchGroup', error),
-        () => console.log(`searchGroup Completed!(${this.noteService.notes.length})`)
-        );
-
+      if (gName === this.noteService.groupName) {
+        console.log('group hasn\'t changed');
+        this.init(indexToEdit);
+      } else {
+        this.noteService.search(gName)
+          .subscribe(notes => {
+            this.init(indexToEdit);
+          },
+          error => console.error('searchGroup', error),
+          () => console.log(`searchGroup Completed!(${this.noteService.notes.length})`)
+          );
+      }
     } else { // empty name
       this.noteService.search('');
       this.inside = false;
@@ -78,12 +76,37 @@ export class OurNotesComponent implements OnInit {
   }
 
   add() {
+    console.log('add', this.route.snapshot);
+    if (this.editing()) {
+      console.log('editing');
+      return;
+    }
     this.router.navigate(['group', this.myForm.controls['groupName'].value, 'add']);
   }
 
   edit(note, index) {
-    console.log('edit', note._id, index);
+    console.log('edit', note._id, index, this.route.snapshot);
+    if (this.editing()) {
+      console.log('editing');
+      return;
+    }
     this.router.navigate(['group', this.myForm.controls['groupName'].value, 'edit', index]);
+  }
+
+  private editing() {
+    return this.route.snapshot.url.length === 4 || // editing
+      this.route.snapshot.firstChild; // adding, firstChild.url[0].path === 'add'
+  }
+
+  private init(indexToEdit) {
+    this.notes = this.noteService.notes;
+    this.inside = true;
+    console.log(this.notes, indexToEdit);
+
+    if (indexToEdit) { // edit
+      this.notes[indexToEdit].todo = 1;
+      this.notes[indexToEdit].index = indexToEdit; // provide note component with index
+    }
   }
 
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, Output } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
 import { Note, NoteService } from '../service/note.service';
@@ -13,6 +13,7 @@ export class NoteFormComponent implements OnInit {
   @Input() noteToEdit: any;
   note: Note;
   noteForm: FormGroup;
+  submitted: boolean;
   /* 
   note that it does not subscribe to value changes of this form.
   on button click, form value is checked and then manually taken to model.
@@ -40,12 +41,17 @@ export class NoteFormComponent implements OnInit {
     }
 
     this.noteForm.patchValue(this.note);
+
+    this.submitted = false;
   }
 
   save(e) { // add or edit
     e.stopPropagation();
     console.log('save', this.noteForm.status);
-    if (this.noteForm.invalid) return;
+    if (this.noteForm.invalid) {
+      this.submitted = true;
+      return;
+    }
 
     if (this.changed()) {
       // take form value to model
@@ -54,6 +60,7 @@ export class NoteFormComponent implements OnInit {
 
       this.saveNote();
     } else { // no change, go back without making server call
+      this.note.todo = undefined;
       this.goBack();
     }
   }
@@ -71,6 +78,11 @@ export class NoteFormComponent implements OnInit {
     this.note.todo = 3;
     this.saveNote();
   }
+
+  // see(e) {
+  //   e.stopPropagation();
+  //   console.log('see', this.noteForm);
+  // }
 
   private changed() { // compare form value and this.note
     if (this.note.todo === 2) return true; // add, changed of course

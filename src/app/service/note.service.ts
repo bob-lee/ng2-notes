@@ -16,10 +16,6 @@ export class NoteService {
 
   constructor(private http: Http) { }
 
-  getNotes() {
-    return this.notes;
-  }
-
   search(term: string) { // search group by name
     if (term) { // enter group
       this.groupName = term;
@@ -31,6 +27,7 @@ export class NoteService {
         });
     } else { // exit group
       this.notes = []; // empty group
+      this.groupName = '';
     }
   }
 
