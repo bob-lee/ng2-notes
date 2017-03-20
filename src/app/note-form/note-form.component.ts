@@ -3,6 +3,7 @@ import { FormsModule, FormBuilder, FormGroup, FormControl, Validators } from '@a
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
 import { Note, NoteService } from '../service/note.service';
+import { WindowRef } from '../service/window-ref.service';
 
 @Component({
   selector: 'note-form',
@@ -21,7 +22,8 @@ export class NoteFormComponent implements OnInit {
 
   constructor(private formBuilder: FormBuilder,
     private router: Router,
-    private noteService: NoteService) { }
+    private noteService: NoteService,
+    private windowRef: WindowRef) { }
 
   ngOnInit() {
     this.noteForm = this.formBuilder.group({
@@ -32,9 +34,11 @@ export class NoteFormComponent implements OnInit {
     if (this.noteToEdit) { // edit
       this.note = this.noteToEdit;
     } else { // add
+      const previousName = this.windowRef.nativeWindow.localStorage.getItem('name');
+
       this.note = {
         group: this.noteService.groupName,
-        name: '',
+        name: previousName ? previousName : '',
         text: '',
         todo: 2
       };

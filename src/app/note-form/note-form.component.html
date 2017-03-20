@@ -12,7 +12,7 @@
 
   <div>
     <md-input-container>
-      <input mdInput placeholder="Name" formControlName="name" required>
+      <input mdInput placeholder="Name" formControlName="name" required blFocusMe>
       <div class="text-danger" [hidden]="!submitted || noteForm.controls.name.valid || !noteForm.controls.name.errors.required">Entry is mandatory</div>
     </md-input-container>
   </div>

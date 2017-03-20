@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { Http, Response } from '@angular/http';
 import { Observable } from 'rxjs';
 
+import { WindowRef } from './window-ref.service';
+
 export interface Note {
   group: string;
   name: string;
@@ -14,7 +16,8 @@ export class NoteService {
   notes: any[]; // put notes here in the service not in component, let component use it
   groupName: string;
 
-  constructor(private http: Http) { }
+  constructor(private http: Http,
+    private windowRef: WindowRef) { }
 
   search(term: string) { // search group by name
     if (term) { // enter group
@@ -23,6 +26,7 @@ export class NoteService {
         .get(`api/notes/${term}`)
         .map((r: Response) => {
           this.notes = r.json();
+          if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('group', term); // remember group
           return this.notes;
         });
     } else { // exit group
@@ -40,11 +44,6 @@ export class NoteService {
           this.updateNote(result.note);
           return note;
         });
-
-      // if (this.changed(note)) {
-      // } else { // no change
-      //   Observable.create(() => { return this.noChange });
-      // }
     } else if (note.todo === 2) { // add
       return this.http
         .post(`api/notes`, note)
@@ -63,12 +62,9 @@ export class NoteService {
     }
   }
 
-  // private noChange = {
-  //   json: function () { return [{ result: 'no change' }]; }
-  // };
-
   private addNote(note: any) {
     this.notes.push(note);
+    if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('name', note.name); // remember the name
     console.log(this.notes.length);
   }
 

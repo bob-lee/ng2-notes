@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
 import { NoteService } from '../service/note.service';
+import { WindowRef } from '../service/window-ref.service';
+
 
 /*
 0! handle 'add' by child route of OurNotesComponent as a nested view 
@@ -15,6 +17,12 @@ import { NoteService } from '../service/note.service';
 0! when saving with no change, do the same navigation without making server call
 0! when entering edit mode, do not make server call if group name hasn't changed
 4! after successful add, content remains in the add form
+
+0! auto focus
+0. show recent notes first (there is no OrderBy / Filter for ngFor)
+0. remember group name and my name on local storage
+0a! when accessing home page, if it remembers previous group, redirect to that group (how to intercept routing behaviour? navigate in ngOnInit)
+0b! when adding a note, if it remembers previous name, prepopulate the name
 */
 
 @Component({
@@ -30,8 +38,8 @@ export class OurNotesComponent implements OnInit {
   constructor(private formBuilder: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private noteService: NoteService) {
-  }
+    private noteService: NoteService,
+    private windowRef: WindowRef) { }
 
   ngOnInit() {
     this.myForm = this.formBuilder.group({
@@ -57,6 +65,15 @@ export class OurNotesComponent implements OnInit {
           );
       }
     } else { // empty name
+      if (this.windowRef.nativeWindow.localStorage) {
+        const previousGroup = this.windowRef.nativeWindow.localStorage.getItem('group');
+        if (previousGroup) {
+          console.log('remembered group', previousGroup);
+          this.router.navigate(['group', previousGroup]); // redirect to remembered group
+          return;
+        }
+      }
+
       this.noteService.search('');
       this.inside = false;
     }
@@ -65,6 +82,8 @@ export class OurNotesComponent implements OnInit {
   searchOrExit() {
     if (this.inside) { // exit
       this.myForm.controls['groupName'].setValue('');
+      if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('group', ''); // clear group
+
       this.inside = false;
       this.router.navigate(['']);
     } else { // search
@@ -76,7 +95,7 @@ export class OurNotesComponent implements OnInit {
   }
 
   add() {
-    console.log('add', this.route.snapshot);
+    console.log('add'/*, this.route.snapshot*/);
     if (this.editing()) {
       console.log('editing');
       return;
@@ -85,7 +104,7 @@ export class OurNotesComponent implements OnInit {
   }
 
   edit(note, index) {
-    console.log('edit', note._id, index, this.route.snapshot);
+    console.log('edit', note._id, index/*, this.route.snapshot*/);
     if (this.editing()) {
       console.log('editing');
       return;

@@ -12,6 +12,8 @@ import { NoteComponent } from './note/note.component';
 import { NoteFormComponent } from './note-form/note-form.component';
 
 import { NoteService } from './service/note.service';
+import { WindowRef } from './service/window-ref.service';
+import { FocusMeDirective } from './focus-me.directive';
 import { AppRoutes } from './app.routes';
 
 @NgModule({
@@ -19,7 +21,8 @@ import { AppRoutes } from './app.routes';
     AppComponent,
     OurNotesComponent,
     NoteComponent,
-    NoteFormComponent
+    NoteFormComponent,
+    FocusMeDirective
   ],
   imports: [
     BrowserModule,
@@ -29,7 +32,8 @@ import { AppRoutes } from './app.routes';
     RouterModule.forRoot(AppRoutes)
   ],
   providers: [
-    NoteService
+    NoteService,
+    WindowRef
   ],
   bootstrap: [AppComponent]
 })
