@@ -40,7 +40,8 @@ export class NoteFormComponent implements OnInit {
         group: this.noteService.groupName,
         name: previousName ? previousName : '',
         text: '',
-        todo: 2
+        todo: 2,
+        updatedAt: ''
       };
     }
 
@@ -82,11 +83,6 @@ export class NoteFormComponent implements OnInit {
     this.note.todo = 3;
     this.saveNote();
   }
-
-  // see(e) {
-  //   e.stopPropagation();
-  //   console.log('see', this.noteForm);
-  // }
 
   private changed() { // compare form value and this.note
     if (this.note.todo === 2) return true; // add, changed of course

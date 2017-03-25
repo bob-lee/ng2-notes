@@ -14,6 +14,7 @@ import { NoteFormComponent } from './note-form/note-form.component';
 import { NoteService } from './service/note.service';
 import { WindowRef } from './service/window-ref.service';
 import { FocusMeDirective } from './focus-me.directive';
+import { RecentFirstPipe } from './recent-first.pipe';
 import { AppRoutes } from './app.routes';
 
 @NgModule({
@@ -22,7 +23,8 @@ import { AppRoutes } from './app.routes';
     OurNotesComponent,
     NoteComponent,
     NoteFormComponent,
-    FocusMeDirective
+    FocusMeDirective,
+    RecentFirstPipe
   ],
   imports: [
     BrowserModule,

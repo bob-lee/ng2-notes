@@ -8,10 +8,8 @@
 <button md-button (click)="add()" [hidden]="!inside">Add note</button>
 <router-outlet></router-outlet>
 
-<!--<group (inside)="updateState($event)"></group>-->
-<!--[notes]="service.notes"-->
 <hr>
 
-<div *ngFor="let note of notes; let i = index" (click)="edit(note, i)" class="notes">
+<div *ngFor="let note of (noteService.notes | recentFirst); let i = index" (click)="edit(note, i)" class="notes">
   <note [note]="note"></note>
 </div>

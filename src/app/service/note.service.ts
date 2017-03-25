@@ -9,15 +9,21 @@ export interface Note {
   name: string;
   text: string;
   todo: number;
+  updatedAt: string; // for sorting
 }
 
 @Injectable()
 export class NoteService {
-  notes: any[]; // put notes here in the service not in component, let component use it
+  notes: any[]; // put notes here in the service not in component, let component use it // ? do not mutate for change detection
   groupName: string;
 
   constructor(private http: Http,
     private windowRef: WindowRef) { }
+
+  edit(indexToEdit) {
+    this.notes[indexToEdit].todo = 1;
+    this.notes[indexToEdit].index = indexToEdit; // provide note component with index
+  }
 
   search(term: string) { // search group by name
     if (term) { // enter group
@@ -42,7 +48,7 @@ export class NoteService {
         .map((r: Response) => {
           const result = r.json();
           this.updateNote(result.note);
-          return note;
+          return this.notes;
         });
     } else if (note.todo === 2) { // add
       return this.http
@@ -50,7 +56,7 @@ export class NoteService {
         .map((r: Response) => {
           const result = r.json();
           this.addNote(result.note);
-          return note;
+          return this.notes;
         });
     } else if (note.todo === 3) { // remove
       return this.http
@@ -63,9 +69,10 @@ export class NoteService {
   }
 
   private addNote(note: any) {
-    this.notes.push(note);
     if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('name', note.name); // remember the name
-    console.log(this.notes.length);
+    //console.log(this.notes.length);
+    //this.notes.push(note);
+    this.notes = [...this.notes, note];
   }
 
   private removeNote(index: number) {

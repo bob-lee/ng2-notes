@@ -19,10 +19,14 @@ import { WindowRef } from '../service/window-ref.service';
 4! after successful add, content remains in the add form
 
 0! auto focus
-0. show recent notes first (there is no OrderBy / Filter for ngFor)
-0. remember group name and my name on local storage
+0! remember group name and my name on local storage
 0a! when accessing home page, if it remembers previous group, redirect to that group (how to intercept routing behaviour? navigate in ngOnInit)
 0b! when adding a note, if it remembers previous name, prepopulate the name
+
+0! show recent notes first (there is no OrderBy / Filter for ngFor -> pipe)
+0a! remove notes array in the component, use notes array in the service
+0b. do not mutate notes array, keep it immutable -> not necessarily..
+0. test
 */
 
 @Component({
@@ -33,12 +37,11 @@ import { WindowRef } from '../service/window-ref.service';
 export class OurNotesComponent implements OnInit {
   myForm: FormGroup;
   inside: boolean = false;
-  notes: any;
 
   constructor(private formBuilder: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    private noteService: NoteService,
+    public noteService: NoteService,
     private windowRef: WindowRef) { }
 
   ngOnInit() {
@@ -46,17 +49,18 @@ export class OurNotesComponent implements OnInit {
       groupName: ['', Validators.required]
     });
 
-    const gName = this.route.snapshot.params['name'];
+    // inspect route
+    const group = this.route.snapshot.params['name'];
     const indexToEdit = this.route.snapshot.params['index'];
-    console.log('ngOnInit', gName, indexToEdit, this.route.snapshot);
-    if (gName) {
-      this.myForm.controls['groupName'].setValue(gName);
+    console.log('ngOnInit', group, indexToEdit, this.route.snapshot);
+    if (group) { // route has group name
+      this.myForm.controls['groupName'].setValue(group);
 
-      if (gName === this.noteService.groupName) {
+      if (group === this.noteService.groupName) {
         console.log('group hasn\'t changed');
         this.init(indexToEdit);
       } else {
-        this.noteService.search(gName)
+        this.noteService.search(group)
           .subscribe(notes => {
             this.init(indexToEdit);
           },
@@ -64,16 +68,17 @@ export class OurNotesComponent implements OnInit {
           () => console.log(`searchGroup Completed!(${this.noteService.notes.length})`)
           );
       }
-    } else { // empty name
+    } else { // route has no group name
       if (this.windowRef.nativeWindow.localStorage) {
         const previousGroup = this.windowRef.nativeWindow.localStorage.getItem('group');
-        if (previousGroup) {
+        if (previousGroup) { // has rememered group name
           console.log('remembered group', previousGroup);
           this.router.navigate(['group', previousGroup]); // redirect to remembered group
           return;
         }
       }
 
+      // exit
       this.noteService.search('');
       this.inside = false;
     }
@@ -82,7 +87,7 @@ export class OurNotesComponent implements OnInit {
   searchOrExit() {
     if (this.inside) { // exit
       this.myForm.controls['groupName'].setValue('');
-      if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('group', ''); // clear group
+      if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('group', ''); // clear group to let, after navigate, ngOnInit find no remembered group and exit
 
       this.inside = false;
       this.router.navigate(['']);
@@ -95,7 +100,7 @@ export class OurNotesComponent implements OnInit {
   }
 
   add() {
-    console.log('add'/*, this.route.snapshot*/);
+    console.log('add');
     if (this.editing()) {
       console.log('editing');
       return;
@@ -104,7 +109,7 @@ export class OurNotesComponent implements OnInit {
   }
 
   edit(note, index) {
-    console.log('edit', note._id, index/*, this.route.snapshot*/);
+    console.log('edit', note._id, index);
     if (this.editing()) {
       console.log('editing');
       return;
@@ -118,13 +123,11 @@ export class OurNotesComponent implements OnInit {
   }
 
   private init(indexToEdit) {
-    this.notes = this.noteService.notes;
     this.inside = true;
-    console.log(this.notes, indexToEdit);
+    console.log('init', indexToEdit);
 
     if (indexToEdit) { // edit
-      this.notes[indexToEdit].todo = 1;
-      this.notes[indexToEdit].index = indexToEdit; // provide note component with index
+      this.noteService.edit(indexToEdit);
     }
   }
 
