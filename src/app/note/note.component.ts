@@ -12,7 +12,6 @@ import { Component, OnInit, Input, Output } from '@angular/core';
     <note-form [noteToEdit]="note"></note-form>
   </div>
   `,
-  //templateUrl: './note.component.html', // (event)="handle($event)"
   styleUrls: ['./note.component.css']
 })
 export class NoteComponent implements OnInit {

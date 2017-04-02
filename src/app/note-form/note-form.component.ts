@@ -3,6 +3,7 @@ import { FormsModule, FormBuilder, FormGroup, FormControl, Validators } from '@a
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
 import { Note, NoteService } from '../service/note.service';
+import { MockNoteService } from '../service/mock-note.service';
 import { WindowRef } from '../service/window-ref.service';
 
 @Component({
@@ -22,7 +23,7 @@ export class NoteFormComponent implements OnInit {
 
   constructor(private formBuilder: FormBuilder,
     private router: Router,
-    private noteService: NoteService,
+    private noteService: MockNoteService,
     private windowRef: WindowRef) { }
 
   ngOnInit() {

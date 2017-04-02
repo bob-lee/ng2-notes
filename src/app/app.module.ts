@@ -12,6 +12,7 @@ import { NoteComponent } from './note/note.component';
 import { NoteFormComponent } from './note-form/note-form.component';
 
 import { NoteService } from './service/note.service';
+import { MockNoteService } from './service/mock-note.service';
 import { WindowRef } from './service/window-ref.service';
 import { FocusMeDirective } from './focus-me.directive';
 import { RecentFirstPipe } from './recent-first.pipe';
@@ -35,6 +36,7 @@ import { AppRoutes } from './app.routes';
   ],
   providers: [
     NoteService,
+    MockNoteService,
     WindowRef
   ],
   bootstrap: [AppComponent]

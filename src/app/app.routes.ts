@@ -13,5 +13,5 @@ export const AppRoutes: Routes = [
       { path: 'add', component: NoteFormComponent } // 'group/Lee%20family/add'
     ]
   },
-  { path: 'group/:name/edit/:index', component: OurNotesComponent } // 'group/Lee%20family/edit/5'
+  { path: 'group/:name/edit/:id', component: OurNotesComponent } // 'group/Lee%20family/edit/58d73eb63af56f27e48d693d'
 ];

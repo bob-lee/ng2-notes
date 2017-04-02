@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
 import { NoteService } from '../service/note.service';
+import { MockNoteService } from '../service/mock-note.service';
 import { WindowRef } from '../service/window-ref.service';
 
 
@@ -26,6 +27,10 @@ import { WindowRef } from '../service/window-ref.service';
 0! show recent notes first (there is no OrderBy / Filter for ngFor -> pipe)
 0a! remove notes array in the component, use notes array in the service
 0b. do not mutate notes array, keep it immutable -> not necessarily..
+
+0. create mock of note service so that it can be played offline
+0. dig more about immutable array and change detection, specially in terms of how component detects change on the service 
+
 0. test
 */
 
@@ -33,6 +38,7 @@ import { WindowRef } from '../service/window-ref.service';
   selector: 'app-our-notes',
   templateUrl: './our-notes.component.html',
   styleUrls: ['./our-notes.component.css']
+  //changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OurNotesComponent implements OnInit {
   myForm: FormGroup;
@@ -41,9 +47,9 @@ export class OurNotesComponent implements OnInit {
   constructor(private formBuilder: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    public noteService: NoteService,
+    public noteService: MockNoteService, // MockNoteService
     private windowRef: WindowRef) { }
-
+  
   ngOnInit() {
     this.myForm = this.formBuilder.group({
       groupName: ['', Validators.required]
@@ -51,18 +57,18 @@ export class OurNotesComponent implements OnInit {
 
     // inspect route
     const group = this.route.snapshot.params['name'];
-    const indexToEdit = this.route.snapshot.params['index'];
-    console.log('ngOnInit', group, indexToEdit, this.route.snapshot);
+    const idToEdit = this.route.snapshot.params['id'];
+    console.log('ngOnInit', group, idToEdit, this.route.snapshot);
     if (group) { // route has group name
       this.myForm.controls['groupName'].setValue(group);
 
       if (group === this.noteService.groupName) {
         console.log('group hasn\'t changed');
-        this.init(indexToEdit);
+        this.init(idToEdit);
       } else {
         this.noteService.search(group)
           .subscribe(notes => {
-            this.init(indexToEdit);
+            this.init(idToEdit);
           },
           error => console.error('searchGroup', error),
           () => console.log(`searchGroup Completed!(${this.noteService.notes.length})`)
@@ -100,21 +106,21 @@ export class OurNotesComponent implements OnInit {
   }
 
   add() {
-    console.log('add');
     if (this.editing()) {
       console.log('editing');
       return;
     }
+    console.log('add');
     this.router.navigate(['group', this.myForm.controls['groupName'].value, 'add']);
   }
 
-  edit(note, index) {
-    console.log('edit', note._id, index);
+  edit(note) {
     if (this.editing()) {
       console.log('editing');
       return;
     }
-    this.router.navigate(['group', this.myForm.controls['groupName'].value, 'edit', index]);
+    console.log('edit', note._id);
+    this.router.navigate(['group', this.myForm.controls['groupName'].value, 'edit', note._id]);
   }
 
   private editing() {
@@ -122,12 +128,12 @@ export class OurNotesComponent implements OnInit {
       this.route.snapshot.firstChild; // adding, firstChild.url[0].path === 'add'
   }
 
-  private init(indexToEdit) {
+  private init(idToEdit) {
     this.inside = true;
-    console.log('init', indexToEdit);
+    console.log('init', idToEdit);
 
-    if (indexToEdit) { // edit
-      this.noteService.edit(indexToEdit);
+    if (idToEdit) { // edit
+      this.noteService.edit(idToEdit);
     }
   }
 
