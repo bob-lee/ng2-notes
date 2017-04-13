@@ -6,7 +6,9 @@ const Schema = mongoose.Schema;
 const NoteSchema = new Schema({
     group: String,
     name: String,
-    text: String
+    text: String,
+    img: { data: Buffer, contentType: String }, // to store optional image
+    dataUri: String // to download data uri for img tag
 }, { timestamps: true });
 
 module.exports = mongoose.model('Note', NoteSchema);

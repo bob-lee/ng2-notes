@@ -1,5 +1,3 @@
-.notes:hover {
-  background-color:  silver;
-  cursor: pointer;
-  margin-left: 3px;
+button.add {
+  margin-bottom: 1em;
 }

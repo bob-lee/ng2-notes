@@ -2,14 +2,18 @@
   <md-input-container>
     <input mdInput placeholder="Group name" formControlName="groupName">
   </md-input-container>
-  <button md-button><i class="material-icons">{{inside ? 'expand_less' : 'search'}}</i></button>
+  <button class=""><i class="material-icons">{{inside ? 'expand_less' : 'search'}}</i></button>
 </form>
 
-<button md-button (click)="add()" [hidden]="!inside">Add note</button>
+<button  (click)="add()" [hidden]="!inside || noteService.todo > 0" class="btn btn-lg btn-primary add">Add note</button>
+
 <router-outlet></router-outlet>
 
- <!---->
-<hr>
-<div *ngFor="let note of (noteService.notes | recentFirst)" (click)="edit(note)" class="notes">
+
+<!--md-button-->
+<!--<hr>
+<note (editNote)="edit($event)" [hidden]="!inside"></note>-->
+<!--<div *ngFor="let note of (noteService.notes | recentFirst)" (click)="edit(note)" class="notes">
   <note [note]="note"></note>
-</div>
+  <hr>
+</div>-->

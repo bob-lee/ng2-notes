@@ -10,12 +10,18 @@ export interface Note {
   text: string;
   todo: number;
   updatedAt: string; // for sorting
+  img: { data: number[], contentType: string }; // optional image
+  dataUri: string; // absent: do nothing with any existing image on database, '': remove image from database
 }
 
 @Injectable()
 export class NoteService {
   notes: any[]; // put notes here in the service not in component, let component use it // ? do not mutate for change detection
   groupName: string;
+
+  private _todo: number = 0; // 0: list, 1: add, 2: edit
+  get todo(): number { return this._todo; }
+  set todo(todo: number) { this._todo = todo; }
 
   constructor(private http: Http,
     private windowRef: WindowRef) { }
@@ -25,6 +31,10 @@ export class NoteService {
     if (index === -1) return; // not found
 
     this.notes[index].todo = 1;
+  }
+
+  getNote(id: string): any {
+    return this.notes[this.index(id)];
   }
 
   search(term: string) { // search group by name
@@ -44,16 +54,16 @@ export class NoteService {
     }
   }
 
-  save(note: any) {
-    if (note.todo === 1) { // edit
+  /*
+  save(note: any, toRemove?: boolean) {
+    if (toRemove) { // remove
       return this.http
-        .put(`api/notes/${note._id}`, note)
+        .delete(`api/notes/${note._id}`)
         .map((r: Response) => {
-          const result = r.json();
-          this.updateNote(result.note);
-          return this.notes;
+          this.removeNote(note);
+          return r.json();
         });
-    } else if (note.todo === 2) { // add
+    } else if (this._todo === 1) { // add
       return this.http
         .post(`api/notes`, note)
         .map((r: Response) => {
@@ -61,12 +71,41 @@ export class NoteService {
           this.addNote(result.note);
           return this.notes;
         });
-    } else if (note.todo === 3) { // remove
+    } else if (this._todo === 2) { // edit
+      return this.http
+        .put(`api/notes/${note._id}`, note)
+        .map((r: Response) => {
+          const result = r.json();
+          this.updateNote(result.note);
+          return this.notes;
+        });
+    }
+  }
+  */
+
+  save2(note: any, files, toRemove?: boolean) {
+    if (toRemove) { // remove
       return this.http
         .delete(`api/notes/${note._id}`)
         .map((r: Response) => {
           this.removeNote(note);
           return r.json();
+        });
+    } else if (this._todo === 1) { // add
+      console.log('save2 add', files);
+
+      return this.http
+        .post(`api/notes`, this.makeFormData(note, files))
+        .map((r: Response) => {
+          this.addNote(r.json());
+          return this.notes;
+        });
+    } else if (this._todo === 2) { // edit
+      return this.http
+        .put(`api/notes/${note._id}`, this.makeFormData(note, files))
+        .map((r: Response) => {
+          this.updateNote(r.json());
+          return this.notes;
         });
     }
   }
@@ -75,6 +114,31 @@ export class NoteService {
     if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('name', note.name); // remember the name
     //this.notes.push(note);
     this.notes = [...this.notes, note]; // needs to replace it for change detection
+  }
+
+  private index(id: string): number {
+    let index = -1;
+    for (let i = 0, len = this.notes.length; i < len; i++) {
+      if (this.notes[i]._id === id) {
+        index = i;
+        break;
+      }
+    }
+    return index; // -1: not found
+  }
+
+  private makeFormData(note: any, files): FormData {
+    let formData = new FormData();
+
+    for (let i = 0; i < files.length; i++) {
+      formData.append('optional', files.item(i));
+    }
+    for (let key in note) {
+      if (key === 'dataUri' && note[key] !== '') continue; // do not send dataUri
+      formData.append(key, note[key]);
+    }
+
+    return formData;
   }
 
   private removeNote(note: any) {
@@ -96,20 +160,8 @@ export class NoteService {
     */
     let index = this.index(note._id);
     if (index === -1) return; // not found
-    
+
     this.notes = [...this.notes.slice(0, index), note, ...this.notes.slice(+index + 1)]; // immutability exercise
   }
-
-  private index(id: number) {
-    let index = -1;
-    for (let i = 0, len = this.notes.length; i < len; i++) {
-      if (this.notes[i]._id === id) {
-        index = i;
-        break;
-      }
-    }
-    return index; // -1: not found
-  }
-
 }
 
