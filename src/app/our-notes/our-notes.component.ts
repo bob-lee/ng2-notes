@@ -1,10 +1,11 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ElementRef, Input, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 
 import { NoteService } from '../service/note.service';
 import { MockNoteService } from '../service/mock-note.service';
 import { WindowRef } from '../service/window-ref.service';
+
 
 
 /*
@@ -26,10 +27,19 @@ import { WindowRef } from '../service/window-ref.service';
 
 0! show recent notes first (there is no OrderBy / Filter for ngFor -> pipe)
 0a! remove notes array in the component, use notes array in the service
-0b. do not mutate notes array, keep it immutable -> not necessarily..
+0b! do not mutate notes array, keep it immutable
 
-0. create mock of note service so that it can be played offline
+0! create mock of note service so that it can be played offline
 0. dig more about immutable array and change detection, specially in terms of how component detects change on the service 
+
+0! restructure components - our-notes renders either note (notes array), note-form (add or edit)
+
+0. note has optional image - can be taken from Windows file system, mobile gallery, or camera
+0! upload image via FormData and save to mongodb (single file only, first save on server file system, then save as binary)
+0! get image from mongodb and show on browser (encode binary as bas64, then data URI on '<img src=')
+0! upload image and note via FormData
+0. save uploaded image to mongodb directly without using server file system
+0. save uploaded image as base64
 
 0. test
 */
@@ -38,7 +48,6 @@ import { WindowRef } from '../service/window-ref.service';
   selector: 'app-our-notes',
   templateUrl: './our-notes.component.html',
   styleUrls: ['./our-notes.component.css']
-  //changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OurNotesComponent implements OnInit {
   myForm: FormGroup;
@@ -47,9 +56,9 @@ export class OurNotesComponent implements OnInit {
   constructor(private formBuilder: FormBuilder,
     private router: Router,
     private route: ActivatedRoute,
-    public noteService: MockNoteService, // MockNoteService
+    public noteService: NoteService, // MockNoteService
     private windowRef: WindowRef) { }
-  
+
   ngOnInit() {
     this.myForm = this.formBuilder.group({
       groupName: ['', Validators.required]
@@ -58,7 +67,7 @@ export class OurNotesComponent implements OnInit {
     // inspect route
     const group = this.route.snapshot.params['name'];
     const idToEdit = this.route.snapshot.params['id'];
-    console.log('ngOnInit', group, idToEdit, this.route.snapshot);
+    console.log('\'OurNotesComponent\'', group, idToEdit, this.route.snapshot);
     if (group) { // route has group name
       this.myForm.controls['groupName'].setValue(group);
 
@@ -114,18 +123,14 @@ export class OurNotesComponent implements OnInit {
     this.router.navigate(['group', this.myForm.controls['groupName'].value, 'add']);
   }
 
-  edit(note) {
-    if (this.editing()) {
-      console.log('editing');
-      return;
-    }
-    console.log('edit', note._id);
-    this.router.navigate(['group', this.myForm.controls['groupName'].value, 'edit', note._id]);
+  edit(noteId) {
+    console.log('edit', noteId);
+    this.router.navigate(['group', this.myForm.controls['groupName'].value, 'edit', noteId]);
   }
 
   private editing() {
     return this.route.snapshot.url.length === 4 || // editing
-      this.route.snapshot.firstChild; // adding, firstChild.url[0].path === 'add'
+      (this.route.snapshot.firstChild && this.route.snapshot.firstChild.url[0].path === 'add'); // adding
   }
 
   private init(idToEdit) {

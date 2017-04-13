@@ -23,6 +23,7 @@ notes
     note.save(function (err) {
       if (err) throw err;
 
+      setDataUri(note, file);
       res.json(note);
     });
   })
@@ -61,6 +62,8 @@ notes
       note.save((err) => {
         if (err) res.send(err);
 
+        setDataUri(file, note);
+        res.json(note);
       });
     });
   })
@@ -68,12 +71,22 @@ notes
     Note.remove({ _id: req.params.note_id }, (err, note) => {
       if (err)
         res.send(err);
-      
+
       res.json({ message: 'Successfully deleted' });
     });
   });
 
-module.exports = notes;  if (note.img && note.img.data) {
+module.exports = notes;
+
+function setDataUri(note, file) { // assumes file saved ok, remove file and set data uri for client view
+  if (file) {
+    fs.unlink(file.path, (err) => {
+      if (err) return console.log(err);
+      console.log(`file deleted successfully '${file.path}'`);
+    })
+  }
+
+  if (note.img && note.img.data) {
     const base64 = note.img.data.toString('base64');
     const dataUri = `data:${note.img.contentType};base64,${base64}`;
     console.log(note._id, note.img.data.length, base64.length); // 68744 bytes -> 91660 bytes, 33% size increase

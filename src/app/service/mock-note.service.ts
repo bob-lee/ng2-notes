@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-//import { Http, Response } from '@angular/http';
 import { Observable } from 'rxjs';
 
 import { WindowRef } from './window-ref.service';
@@ -27,9 +26,13 @@ export class MockNoteService {
   db: any[]; // may not need this.. work directly with 'notes'?
   groupName: string;
 
+  private _todo: number = 0; // 0: list, 1: add, 2: edit
+  get todo(): number { return this._todo; }
+  set todo(todo: number) { this._todo = todo; }
+
   constructor(/*private http: Http,*/
     private windowRef: WindowRef) {
-    
+
     // initialise the db
     this.db = [
       {
@@ -79,6 +82,10 @@ export class MockNoteService {
     this.notes[index].todo = 1;
   }
 
+  getNote(id: string): any {
+    return this.db[this.index(id)];
+  }
+
   search(term: string) { // search group by name
     if (term) { // enter group
       this.groupName = term;
@@ -97,17 +104,15 @@ export class MockNoteService {
     }
   }
 
-  save(note: any) {
-    if (note.todo === 1) { // edit
-      this.updateNote(note);
-      return Observable.from([note]);
-    } else if (note.todo === 2) { // add
-      this.addNote(note);
-      return Observable.from([note]);
-    } else if (note.todo === 3) { // remove
+  save(note: any, toRemove?: boolean) {
+    if (toRemove) {
       this.removeNote(note);
-      return Observable.from([note]);
+    } else {
+      if (this._todo === 1) this.addNote(note);
+      else this.updateNote(note);
     }
+
+    return Observable.from([note]);
   }
 
   private addNote(note: any) {
@@ -145,7 +150,7 @@ export class MockNoteService {
     this.notes = [...this.db];
   }
 
-  private index(id: number) {
+  private index(id: string): number {
     let index = -1;
     for (let i = 0, len = this.db.length; i < len; i++) {
       if (this.db[i]._id === id) {
