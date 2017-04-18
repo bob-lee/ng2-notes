@@ -10,13 +10,15 @@ export interface Note {
   text: string;
   todo: number;
   updatedAt: string; // for sorting
-  img: { data: number[], contentType: string }; // optional image
-  dataUri: string; // absent: do nothing with any existing image on database, '': remove image from database
+  isBase64: boolean; // to inidcate how to handle selected file, false: upload via FormData and save as binary, true: upload and save as base64 string
+  base64: string; // to upload base64 encoded image, to download data uri
+  img: { data: number[], contentType: string }; // to upload binary image
+  imgTo: string // client to set what to do with any existing data on db, '': do nothing or save uploaded image, 'remove': to remove image on db
 }
 
 @Injectable()
 export class NoteService {
-  notes: any[]; // put notes here in the service not in component, let component use it // ? do not mutate for change detection
+  notes: any[]; // put immutable notes array here in the service, let component use it
   groupName: string;
 
   private _todo: number = 0; // 0: list, 1: add, 2: edit
@@ -44,7 +46,7 @@ export class NoteService {
         .get(`api/notes/${term}`)
         .map((r: Response) => {
           this.notes = r.json();
-          console.log('search', this.notes);
+          console.log(`got ${this.notes.length} note(s)`);
           if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('group', term); // remember group
           return this.notes;
         });
@@ -54,8 +56,7 @@ export class NoteService {
     }
   }
 
-  /*
-  save(note: any, toRemove?: boolean) {
+  save(note: any, files, toRemove?: boolean): Observable<any> {
     if (toRemove) { // remove
       return this.http
         .delete(`api/notes/${note._id}`)
@@ -64,49 +65,46 @@ export class NoteService {
           return r.json();
         });
     } else if (this._todo === 1) { // add
-      return this.http
-        .post(`api/notes`, note)
-        .map((r: Response) => {
-          const result = r.json();
-          this.addNote(result.note);
-          return this.notes;
-        });
-    } else if (this._todo === 2) { // edit
-      return this.http
-        .put(`api/notes/${note._id}`, note)
-        .map((r: Response) => {
-          const result = r.json();
-          this.updateNote(result.note);
-          return this.notes;
-        });
-    }
-  }
-  */
+      console.log('save add', files, note.isBase64);
 
-  save2(note: any, files, toRemove?: boolean) {
-    if (toRemove) { // remove
-      return this.http
-        .delete(`api/notes/${note._id}`)
-        .map((r: Response) => {
-          this.removeNote(note);
-          return r.json();
-        });
-    } else if (this._todo === 1) { // add
-      console.log('save2 add', files);
+      if (note.isBase64) { // post data as base64
+        return this.makeNote(note, files)
+          .flatMap(note => {
+            return this.http
+              .post(`api/notes`, note)
+              .map((r: Response) => {
+                this.addNote(r.json());
+                return this.notes;
+              });
+          });
+      } else { // post data as binary via FormData
+        return this.http
+          .post(`api/notes/form`, this.makeFormData(note, files))
+          .map((r: Response) => {
+            this.addNote(r.json());
+            return this.notes;
+          });
+      }
 
-      return this.http
-        .post(`api/notes`, this.makeFormData(note, files))
-        .map((r: Response) => {
-          this.addNote(r.json());
-          return this.notes;
-        });
     } else if (this._todo === 2) { // edit
-      return this.http
-        .put(`api/notes/${note._id}`, this.makeFormData(note, files))
-        .map((r: Response) => {
-          this.updateNote(r.json());
-          return this.notes;
-        });
+      if (note.isBase64) { // put data as base64
+        return this.makeNote(note, files)
+          .flatMap(note => {
+            return this.http
+              .put(`api/notes/${note._id}`, note)
+              .map((r: Response) => {
+                this.updateNote(r.json());
+                return this.notes;
+              });
+          });
+      } else { // put data as binary via FormData
+        return this.http
+          .put(`api/notes/form/${note._id}`, this.makeFormData(note, files))
+          .map((r: Response) => {
+            this.updateNote(r.json());
+            return this.notes;
+          });
+      }
     }
   }
 
@@ -114,6 +112,14 @@ export class NoteService {
     if (this.windowRef.nativeWindow.localStorage) this.windowRef.nativeWindow.localStorage.setItem('name', note.name); // remember the name
     //this.notes.push(note);
     this.notes = [...this.notes, note]; // needs to replace it for change detection
+  }
+
+  private appendFormData(note: any, formData: FormData, base64?: string): void {
+    for (let key in note) {
+      if (key === 'base64'/* && note.imgTo !== 'remove'*/) continue; // do not send base64
+
+      formData.append(key, key === 'base64' && base64 ? base64 : note[key]);
+    }
   }
 
   private index(id: string): number {
@@ -131,14 +137,41 @@ export class NoteService {
     let formData = new FormData();
 
     for (let i = 0; i < files.length; i++) {
-      formData.append('optional', files.item(i));
+      const file = files.item(i);
+      formData.append('optional', file);
     }
-    for (let key in note) {
-      if (key === 'dataUri' && note[key] !== '') continue; // do not send dataUri
-      formData.append(key, note[key]);
-    }
+    this.appendFormData(note, formData);
 
     return formData;
+  }
+
+  private makeNote(note: any, files): Observable<any> {
+    const file = files.length > 0 ? files.item(0) : null;
+    console.log('makeNote', note, file);
+
+    if (!file) {
+      //console.log('makeNote', note);
+      note.base64 = '';
+      return Observable.of(note);
+    }
+
+    // populate note.base64
+    let fileReader = new FileReader();
+
+    let result = Observable.create(observer => {
+      fileReader.onload = function (event: any) {
+        let base64 = event.target.result; // "data:image/jpeg;base64,/9j/4AAQSk..."
+        console.log('makeNote base64', base64.length);
+        note.base64 = base64;
+
+        observer.next(note);
+        observer.complete();
+      }
+    });
+
+    fileReader.readAsDataURL(file);
+
+    return result;
   }
 
   private removeNote(note: any) {
@@ -149,15 +182,7 @@ export class NoteService {
     //this.notes.splice(index, 1);
   }
 
-  private updateNote(note: any) { // find note and update it with given one. assumes given one appears in array only once
-    /* mutate item
-    for (let i = 0, len = this.notes.length; i < len; i++) {
-      if (note._id === this.notes[i]._id) {
-        this.notes[i] = note;
-        return;
-      }
-    }
-    */
+  private updateNote(note: any) {
     let index = this.index(note._id);
     if (index === -1) return; // not found
 

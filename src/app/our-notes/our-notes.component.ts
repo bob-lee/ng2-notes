@@ -41,6 +41,8 @@ import { WindowRef } from '../service/window-ref.service';
 0. save uploaded image to mongodb directly without using server file system
 0. save uploaded image as base64
 
+0. try service worker to process image (e.g. downgrading if too big)
+
 0. test
 */
 

@@ -16,7 +16,8 @@ export class NoteFormComponent implements OnInit {
   note: Note;
   noteForm: FormGroup;
   submitted: boolean;
-  _fileChanged: boolean;
+  imgToRemove: boolean;
+  _fileChanged: boolean; // selected or removed
   /* 
   note that it does not subscribe to value changes of this form.
   on button click, form value is checked and then manually taken to model.
@@ -31,7 +32,9 @@ export class NoteFormComponent implements OnInit {
   ngOnInit() {
     this.noteForm = this.formBuilder.group({
       name: ['', Validators.required],
-      text: ['', Validators.required]
+      text: ['', Validators.required],
+      //isBase64: false
+      imageAs: 'binary' // form control 'imageAs' as string <--> model 'isBase64' as boolean
     });
     this._fileChanged = false;
 
@@ -49,8 +52,10 @@ export class NoteFormComponent implements OnInit {
         text: '',
         todo: 2,
         updatedAt: '',
+        isBase64: false,
+        base64: '',
         img: undefined,
-        dataUri: ''
+        imgTo: '' // server to do nothing or save data on base64 / img
       };
     } else { // edit
       this.note = this.noteService.getNote(idToEdit);
@@ -58,7 +63,9 @@ export class NoteFormComponent implements OnInit {
 
     this.noteService.todo = addOrEdit ? 1 : 2;
 
+    // apply model to view
     this.noteForm.patchValue(this.note);
+    this.noteForm.controls['imageAs'].setValue(this.note.isBase64 ? 'base64' : 'binary');
 
     this.submitted = false;
   }
@@ -71,8 +78,10 @@ export class NoteFormComponent implements OnInit {
     this.goBack();
   }
 
-  fileChanged() {
+  fileSelected() {
+    this.imgToRemove = false;
     this._fileChanged = true;
+    console.log(`fileSelected ${this.inputEl.nativeElement.files.length} file(s), imgToRemove=${this.imgToRemove}`);
   }
 
   remove(e) {
@@ -82,10 +91,10 @@ export class NoteFormComponent implements OnInit {
   }
 
   removeFile(e) {
-    console.log('removeFile', this.inputEl);
-    this.inputEl.nativeElement.value = '';
-    this.note.dataUri = '';
-    this.fileChanged();
+    this.inputEl.nativeElement.value = ''; // remove any selected file
+    this.imgToRemove = true; // hide any downloaded image
+    this._fileChanged = true;
+    console.log(`removeFile ${this.inputEl.nativeElement.files.length} file(s), imgToRemove=${this.imgToRemove}`);
   }
 
   save(e) { // add or edit
@@ -100,12 +109,20 @@ export class NoteFormComponent implements OnInit {
       // take form value to model
       this.note.name = this.noteForm.value.name;
       this.note.text = this.noteForm.value.text;
+      //this.note.isBase64 = this.noteForm.value.isBase64;
+      this.note.isBase64 = this.noteForm.value.imageAs === 'base64';
+      this.note.imgTo = this.imgToRemove ? 'remove' : '';
 
       this.saveNote();
     } else { // no change, go back without making server call
       this.note.todo = undefined;
       this.goBack();
     }
+  }
+
+  get toHide(): boolean { 
+    const hideIt = this.imgToRemove || !this.note.base64 || (this.inputEl.nativeElement.files.length > 0 && this.note.base64);
+    return hideIt as boolean;
   }
 
   private changed() { // compare form value and this.note
@@ -123,10 +140,11 @@ export class NoteFormComponent implements OnInit {
   private saveNote(toRemove?: boolean) { // assumes this.note has form value
     let inputEl: HTMLInputElement = this.inputEl.nativeElement;
     
-    this.noteService.save2(this.note, inputEl.files, toRemove)
+    this.noteService.save(this.note, inputEl.files, toRemove)
       .subscribe(result => {
         console.log('saved', result);
         this.goBack();
-      });
+      },
+      (error) => console.log('saveNote error', error));
   }
 }

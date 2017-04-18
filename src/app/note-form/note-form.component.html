@@ -29,10 +29,18 @@ id="myFileInput"
   </div>
 
   <div class="">
-    <input class="btn" type="file" accept="image/*;capture=camera" (change)="fileChanged()" #fileInput>
-    <button class="" (click)="removeFile($event)" [hidden]="fileInput.files.length === 0 && !note.dataUri" type="button"><i class="material-icons">delete</i></button>
+    <input class="btn" type="file" accept="image/*;capture=camera" (change)="fileSelected()" #fileInput>
+    <button class="" type="button" (click)="removeFile($event)" [hidden]="fileInput.files.length === 0 && !note.base64"><i class="material-icons">delete</i></button>
+    <!--<md-checkbox class="" formControlName="isBase64" [disabled]="note._id">Base64</md-checkbox>-->
+    <section class="">
+      <label class="">Save image as:</label>
+      <md-radio-group formControlName="imageAs" [disabled]="note._id">
+        <md-radio-button class="example-margin" value="binary">Binary</md-radio-button>
+        <md-radio-button class="example-margin" value="base64">Base64</md-radio-button>
+      </md-radio-group>
+    </section>
   </div>
 
-  <img [src]="note.dataUri" [hidden]="!note.dataUri">
+  <img [src]="note.base64" [hidden]="toHide">
 
 </form>

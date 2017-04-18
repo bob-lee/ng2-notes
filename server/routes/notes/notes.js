@@ -6,32 +6,11 @@ const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
 notes
-  .post('/', upload.single('optional'), (req, res) => {
-    const file = req.file,
-      body = req.body;
-    console.log('post file: ', file, ', body: ', body);
-
-    let note = new Note();
-    note.group = body.group;
-    note.name = body.name;
-    note.text = body.text;
-    if (req.file) {
-      note.img.data = fs.readFileSync(req.file.path);
-      note.img.contentType = req.file.mimetype;
-    }
-
-    note.save(function (err) {
-      if (err) throw err;
-
-      setDataUri(note, file);
-      res.json(note);
-    });
-  })
   .get('/:group_id', (req, res) => { // GET api/notes/myGroupName
     console.log('single', req.body);
     const id = req.params.group_id;
     Note.find({ group: req.params.group_id }, (err, notes) => {
-      if (err) res.send(err);
+      if (err) throw err;
 
       notes.forEach(note => { // convert binary data to data uri string
         setDataUri(note);
@@ -40,10 +19,53 @@ notes
       res.status(200).json(notes);
     });
   })
-  .put('/:note_id', upload.single('optional'), (req, res) => {
+  .post('/', (req, res) => {
+    const body = req.body,
+      base64 = body.base64;
+    console.log(`post { name: ${body.name}, text: ${body.text}, base64: ${body.base64 && body.base64.length}, imgTo:${body.imgTo} }`);
+
+    let note = new Note();
+    note.group = body.group;
+    note.name = body.name;
+    note.text = body.text;
+    note.isBase64 = body.isBase64; // once saved, not-editable
+    note.base64 = body.base64;
+
+    note.save(function (err) {
+      if (err) {
+        console.error(note);
+        res.send(err);
+      }
+
+      res.json(note);
+    });
+  })
+  .post('/form', upload.single('optional'), (req, res) => {
     const file = req.file,
       body = req.body;
-    console.log('put file: ', file, ', body: ', body);
+    console.log(`post file: ${file}, body: { name: ${body.name}, text: ${body.text}, base64: ${body.base64 && body.base64.length}, imgTo:${body.imgTo} }`);
+
+    let note = new Note();
+    note.group = body.group;
+    note.name = body.name;
+    note.text = body.text;
+    note.isBase64 = body.isBase64; // once saved, not-editable
+    if (req.file) {
+      note.img.data = fs.readFileSync(req.file.path);
+      note.img.contentType = req.file.mimetype;
+    }
+
+    note.save(function (err) {
+      if (err) throw err;
+
+      setDataUri(note, file); // to show saved image
+      res.json(note);
+    });
+  })
+  .put('/:note_id', (req, res) => {
+    const body = req.body,
+      base64 = body.base64;
+    console.log(`put { name: ${body.name}, text: ${body.text}, base64: ${body.base64 && body.base64.length}, imgTo:${body.imgTo} }`);
 
     Note.findById(req.params.note_id, (err, note) => {
       if (err) res.send(err);
@@ -51,18 +73,42 @@ notes
       // update the notes info
       note.name = body.name;
       note.text = body.text;
-      if (file) { // file selected
+      if (body.imgTo === 'remove') {
+        note.base64 = '';
+      } else if (body.base64) {
+        note.base64 = body.base64;
+      }
+
+      note.save((err) => {
+        if (err) res.send(err);
+
+        res.json(note);
+      });
+    });
+  })
+  .put('/form/:note_id', upload.single('optional'), (req, res) => {
+    const file = req.file,
+      body = req.body;
+    console.log(`put file: ${file}, body: { name: ${body.name}, text: ${body.text}, base64: ${body.base64 && body.base64.length}, imgTo:${body.imgTo} }`);
+
+    Note.findById(req.params.note_id, (err, note) => {
+      if (err) res.send(err);
+
+      // update the notes info
+      note.name = body.name;
+      note.text = body.text;
+      if (file) {
         note.img.data = fs.readFileSync(file.path);
         note.img.contentType = file.mimetype;
-      } else if (body.dataUri === '') { // to remove existing saved image on database
-        console.log('put file: trying to remove img');
+      } else if (body.imgTo === 'remove') { // to remove existing saved image on database
+        console.log('put file: delting img');
         note.img = undefined;
       }
 
       note.save((err) => {
         if (err) res.send(err);
 
-        setDataUri(file, note);
+        setDataUri(note, file); // to show saved image
         res.json(note);
       });
     });
@@ -91,6 +137,6 @@ function setDataUri(note, file) { // assumes file saved ok, remove file and set 
     const dataUri = `data:${note.img.contentType};base64,${base64}`;
     console.log(note._id, note.img.data.length, base64.length); // 68744 bytes -> 91660 bytes, 33% size increase
     note.img = undefined;
-    note.dataUri = dataUri;
+    note.base64 = dataUri;
   }
 }
